@@ -6,14 +6,98 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+model User {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  username     String        @unique
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  customer     Customer?
+  accountType  AccountType   @default(PERSONAL)
+  subscription Subscription?
+}
+
+enum AccountType {
+  PERSONAL
+  BUSINESS
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+}
+
+enum SubscriptionPlanType {
+  MONTH
+  SIX_MONTH
+  YEAR
+}
+
+model Subscription {
+  id         String             @id @default(uuid())
+  userId     String             @unique
+  user       User               @relation(references: [id], fields: [userId], onDelete: Cascade)
+  planId     String
+  plan       SubscriptionPlan   @relation(references: [id], fields: [planId])
+  status     SubscriptionStatus @default(ACTIVE)
+  activeTill DateTime?
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  payment    Payment[]
+}
+
+model SubscriptionPlan {
+  id              String                    @id @default(uuid())
+  monthPlanId     String
+  monthPlan       MonthlySubscriptionPlan   @relation(references: [id], fields: [monthPlanId])
+  sixMonthsPlanId String
+  sixMonthPlan    SixMonthsSubscriptionPlan @relation(references: [id], fields: [sixMonthsPlanId])
+  yearPlanId      String
+  yearPlan        YearSubscriptionPlan      @relation(references: [id], fields: [yearPlanId])
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  subscription    Subscription[]
+}
+
+model MonthlySubscriptionPlan {
+  id               String               @id @default(uuid())
+  type             SubscriptionPlanType @default(MONTH)
+  price            Int                  @default(10)
+  currency         Currency             @default(USD)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  subscriptionPlan SubscriptionPlan[]
+}
+
+model SixMonthsSubscriptionPlan {
+  id               String               @id @default(uuid())
+  price            Int                  @default(50)
+  type             SubscriptionPlanType @default(SIX_MONTH)
+  currency         Currency             @default(USD)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  subscriptionPlan SubscriptionPlan[]
+}
+
+model YearSubscriptionPlan {
+  id               String               @id @default(uuid())
+  price            Int                  @default(100)
+  currency         Currency             @default(USD)
+  type             SubscriptionPlanType @default(YEAR)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  subscriptionPlan SubscriptionPlan[]
 }
 
 model Customer {
   id        String   @id @default(uuid())
-  email     String
-  name      String
+  userId    String   @unique
+  user      User     @relation(references: [id], fields: [userId], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   orders    Order[]
@@ -22,12 +106,13 @@ model Customer {
 }
 
 model Product {
-  id          String   @id @default(uuid())
+  id          String           @id @default(uuid())
   name        String
   description String
   prices      Price[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  orders      ProductOnOrder[]
 
   @@map("products")
 }
@@ -50,13 +135,24 @@ model Price {
   @@map("prices")
 }
 
+model ProductOnOrder {
+  id        String  @id @default(uuid())
+  productId String
+  product   Product @relation(references: [id], fields: [productId], onDelete: Cascade)
+  orderId   String
+  order     Order   @relation(references: [id], fields: [orderId])
+
+  @@map("order_products")
+}
+
 model Order {
-  id        String    @id @default(uuid())
-  userId    String
-  customer  Customer  @relation(references: [id], fields: [userId], onDelete: Cascade)
-  payment   Payment[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id              String           @id @default(uuid())
+  customerId      String
+  customer        Customer         @relation(references: [id], fields: [customerId], onDelete: Cascade)
+  payment         Payment[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  productsOnOrder ProductOnOrder[]
 
   @@map("orders")
 }
@@ -68,14 +164,17 @@ enum PaymentStatus {
 }
 
 model Payment {
-  id         String        @id @default(uuid())
-  orderId    String
-  order      Order         @relation(references: [id], fields: [orderId])
-  totalPrice Float
-  currency   Currency
-  status     PaymentStatus
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
+  id             String        @id @default(uuid())
+  description    String
+  orderId        String?
+  order          Order?        @relation(references: [id], fields: [orderId])
+  subscriptionId String?
+  subscription   Subscription? @relation(references: [id], fields: [subscriptionId])
+  price          Float
+  currency       Currency
+  status         PaymentStatus
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   @@map("payments")
 }
