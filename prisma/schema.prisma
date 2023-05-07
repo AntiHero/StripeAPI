@@ -1,0 +1,81 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Customer {
+  id        String   @id @default(uuid())
+  email     String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  orders    Order[]
+
+  @@map("users")
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  prices      Price[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("products")
+}
+
+enum Currency {
+  USD
+  BYN
+  EUR
+}
+
+model Price {
+  id        String   @id @default(uuid())
+  price     Float
+  currency  Currency
+  productId String
+  product   Product  @relation(references: [id], fields: [productId], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("prices")
+}
+
+model Order {
+  id        String    @id @default(uuid())
+  userId    String
+  customer  Customer  @relation(references: [id], fields: [userId], onDelete: Cascade)
+  payment   Payment[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("orders")
+}
+
+enum PaymentStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+}
+
+model Payment {
+  id         String        @id @default(uuid())
+  orderId    String
+  order      Order         @relation(references: [id], fields: [orderId])
+  totalPrice Float
+  currency   Currency
+  status     PaymentStatus
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  @@map("payments")
+}
