@@ -20,6 +20,8 @@ model User {
   customer     Customer?
   accountType  AccountType   @default(PERSONAL)
   subscription Subscription?
+
+  @@map("users")
 }
 
 enum AccountType {
@@ -49,6 +51,8 @@ model Subscription {
   createdAt  DateTime           @default(now())
   updatedAt  DateTime           @updatedAt
   payment    Payment[]
+
+  @@map("subscriptions")
 }
 
 model SubscriptionPlan {
@@ -62,6 +66,8 @@ model SubscriptionPlan {
   createdAt       DateTime                  @default(now())
   updatedAt       DateTime                  @updatedAt
   subscription    Subscription[]
+
+  @@map("subscriptionPlans")
 }
 
 model MonthlySubscriptionPlan {
@@ -102,7 +108,7 @@ model Customer {
   updatedAt DateTime @updatedAt
   orders    Order[]
 
-  @@map("users")
+  @@map("customers")
 }
 
 model Product {
@@ -142,7 +148,7 @@ model ProductOnOrder {
   orderId   String
   order     Order   @relation(references: [id], fields: [orderId])
 
-  @@map("order_products")
+  @@map("orderProducts")
 }
 
 model Order {
