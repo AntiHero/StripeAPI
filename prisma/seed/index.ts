@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
 
 async function seed() {
   await prisma.user.deleteMany();
-  await prisma.subscriptionPrice.deleteMany();
+  await prisma.price.deleteMany();
 
   await prisma.$transaction(async (tx) => {
     await tx.user.create({
@@ -18,61 +18,102 @@ async function seed() {
       },
     });
 
-    await tx.subscriptionPrice.createMany({
+    await tx.price.createMany({
       data: [
         {
-          currency: 'USD',
-          price: 10,
-          priceId: 'price_1N5xcwCiLuvOXDcQ6fpYRGZh',
-          productId: 'prod_Nrh0od8Djiubbw',
-          type: 'ONETIME',
-          name: 'MONTH',
           period: 1,
+          value: 10.0,
+          currency: 'USD',
         },
         {
-          currency: 'USD',
-          price: 50,
-          priceId: 'price_1N5xcwCiLuvOXDcQdTK5VZ0T',
-          productId: 'prod_Nrh0od8Djiubbw',
-          type: 'ONETIME',
-          name: 'SIXMONTHS',
           period: 6,
+          value: 50.0,
+          currency: 'USD',
         },
         {
-          currency: 'USD',
-          price: 100,
-          priceId: 'price_1N5xcwCiLuvOXDcQDGd9cVNN',
-          productId: 'prod_Nrh0od8Djiubbw',
-          type: 'ONETIME',
-          name: 'YEAR',
           period: 12,
+          value: 100.0,
+          currency: 'USD',
+        },
+      ],
+    });
+
+    const prices = await tx.price.findMany({});
+
+    await tx.pricingPlan.createMany({
+      data: [
+        {
+          priceId: prices[0].id,
+          provider: 'STRIPE',
+          paymentType: 'ONETIME',
+          entityId: 'price_1N5xcwCiLuvOXDcQ6fpYRGZh',
         },
         {
-          currency: 'USD',
-          price: 10,
-          priceId: 'price_1N5xcwCiLuvOXDcQZa55KgSs',
-          productId: 'prod_Nrh0od8Djiubbw',
-          type: 'RECCURING',
-          name: 'MONTH',
-          period: 1,
+          priceId: prices[1].id,
+          provider: 'STRIPE',
+          paymentType: 'ONETIME',
+          entityId: 'price_1N5xcwCiLuvOXDcQdTK5VZ0T',
         },
         {
-          currency: 'USD',
-          price: 50,
-          priceId: 'price_1N5xcwCiLuvOXDcQFKwj2Oq6',
-          productId: 'prod_Nrh0od8Djiubbw',
-          type: 'RECCURING',
-          name: 'SIXMONTHS',
-          period: 6,
+          priceId: prices[2].id,
+          provider: 'STRIPE',
+          paymentType: 'ONETIME',
+          entityId: 'price_1N5xcwCiLuvOXDcQDGd9cVNN',
         },
         {
-          currency: 'USD',
-          price: 100,
-          priceId: 'price_1N5xcwCiLuvOXDcQ9Zyf5Snl',
-          productId: 'prod_Nrh0od8Djiubbw',
-          type: 'RECCURING',
-          name: 'YEAR',
-          period: 12,
+          priceId: prices[0].id,
+          provider: 'STRIPE',
+          paymentType: 'RECCURING',
+          entityId: 'price_1N5xcwCiLuvOXDcQZa55KgSs',
+        },
+        {
+          priceId: prices[1].id,
+          provider: 'STRIPE',
+          paymentType: 'RECCURING',
+          entityId: 'price_1N5xcwCiLuvOXDcQFKwj2Oq6',
+        },
+        {
+          priceId: prices[2].id,
+          provider: 'STRIPE',
+          paymentType: 'RECCURING',
+          entityId: 'price_1N5xcwCiLuvOXDcQ9Zyf5Snl',
+        },
+        // PAYPAL
+        {
+          priceId: prices[0].id,
+          provider: 'PAYPAL',
+          paymentType: 'ONETIME',
+          entityId: 'P-94S73988AG6344329MRPVXEI',
+        },
+        {
+          priceId: prices[1].id,
+          provider: 'PAYPAL',
+          paymentType: 'ONETIME',
+          entityId: 'P-9PK61989CS7583206MRPV6IQ',
+        },
+        {
+          priceId: prices[2].id,
+          provider: 'PAYPAL',
+          paymentType: 'ONETIME',
+          entityId: 'P-78740027FH535145YMRPWJBY',
+        },
+        {
+          priceId: prices[0].id,
+          provider: 'PAYPAL',
+          paymentType: 'RECCURING',
+          entityId: 'P-94S73988AG6344329MRPVXEI',
+        },
+        {
+          priceId: prices[1].id,
+          provider: 'PAYPAL',
+          paymentType: 'RECCURING',
+          entityId: 'P-9PK61989CS7583206MRPV6IQ',
+        },
+        {
+          priceId: prices[2].id,
+          provider: 'PAYPAL',
+          paymentType: 'RECCURING',
+          entityId: 'P-78740027FH535145YMRPWJBY',
         },
       ],
     });
@@ -87,4 +128,5 @@ seed()
     console.error(e);
     await prisma.$disconnect();
     process.exit(1);
-  });
+  })
+  .finally(() => console.log('seeding completed'));

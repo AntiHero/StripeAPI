@@ -1,7 +1,7 @@
 import { Controller, Get } from '@nestjs/common';
 import Stripe from 'stripe';
 
-import { InjectStripe } from './stripe/decorators/inject-stripe.decorator';
+import { InjectStripe } from './@core/decorators/stripe.decorator';
 
 @Controller()
 export class AppController {
